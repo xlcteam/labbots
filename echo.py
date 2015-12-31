@@ -37,10 +37,10 @@ SERVER = [
 DATA = 'echo.data'
 
 # echo.py features
-# accept friend request
-# echo back friend message
-# accept and answer friend call request
-# send back friend audio/video data
+# - accept friend request
+# - echo back friend message
+# - accept and answer friend call request
+# - send back friend audio/video data
 
 
 class AV(ToxAV):
@@ -58,17 +58,29 @@ class AV(ToxAV):
     def on_call_state(self, friend_number, state):
         print('call state:fn=%d, state=%d' % (friend_number, state))
 
-    def on_bit_rate_status(self, friend_number, audio_bit_rate, video_bit_rate):
+    def on_bit_rate_status(self,
+                           friend_number,
+                           audio_bit_rate,
+                           video_bit_rate):
         print('bit rate status: fn=%d, abr=%d, vbr=%d' %
               (friend_number, audio_bit_rate, video_bit_rate))
 
-    def on_audio_receive_frame(self, friend_number, pcm, sample_count, channels, sampling_rate):
+    def on_audio_receive_frame(self,
+                               friend_number,
+                               pcm,
+                               sample_count,
+                               channels,
+                               sampling_rate):
         # print('audio frame: %d, %d, %d, %d' %
         #      (friend_number, sample_count, channels, sampling_rate))
         # print('pcm len:%d, %s' % (len(pcm), str(type(pcm))))
         sys.stdout.write('.')
         sys.stdout.flush()
-        bret = self.audio_send_frame(friend_number, pcm, sample_count, channels, sampling_rate)
+        bret = self.audio_send_frame(friend_number,
+                                     pcm,
+                                     sample_count,
+                                     channels,
+                                     sampling_rate)
         if bret is False:
             pass
 
@@ -83,6 +95,7 @@ class AV(ToxAV):
 
     def witerate(self):
         self.iterate()
+
 
 class ToxOptions():
     def __init__(self):
@@ -125,16 +138,22 @@ class EchoBot(Tox):
         print (fid, filenumber, kind, size, filename)
         if size == 0:
             return
-        self.files[filenumber] = open(filename, 'w')
+
+        self.files[(fid, filenumber)] = {
+            'f': open(filename, 'w'),
+            'filename': filename
+        }
+
         self.file_control(fid, filenumber, Tox.FILE_CONTROL_RESUME)
 
     def on_file_recv_chunk(self, fid, filenumber, position, data):
         if data is None:
-            self.files[filenumber].close()
-            print("Finished!")
+            self.files[(fid, filenumber)]['f'].close()
+            filename = self.files[(fid, filenumber)]['filename']
+            print("Finished transfer of '{}'!".format(filename))
             return
 
-        self.files[filenumber].write(data)
+        self.files[(fid, filenumber)]['f'].write(data)
         print (fid, filenumber, position)
 
     def connect(self):
