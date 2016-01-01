@@ -1,6 +1,6 @@
 #
-# @file   echo.py
-# @author Wei-Ning Huang (AZ) <aitjcize@gmail.com>
+# PrintBot: a Tox bot that 3D prints .gcode files it receives
+# Based on the echo.py script by Wei-Ning Huang (AZ) <aitjcize@gmail.com>
 #
 # Copyright (C) 2013 - 2014 Wei-Ning Huang (AZ) <aitjcize@gmail.com>
 # All Rights reserved.
@@ -35,13 +35,12 @@ SERVER = [
     "F404ABAA1C99A9D37D61AB54898F56793E1DEF8BD46B1038B9D822E8460FAB67"
 ]
 
-DATA = 'echo.data'
+DATA = 'printbot.data'
 
-# echo.py features
+# printbot.py features
 # - accept friend request
-# - echo back friend message
-# - accept and answer friend call request
-# - send back friend audio/video data
+# - print sent .gcode files on a 3D printer
+# - talk to the user about the process
 
 
 class AV(ToxAV):
@@ -123,12 +122,20 @@ def load_from_file(fname):
     return open(fname, 'rb').read()
 
 
-class EchoBot(Tox):
+INTRO_MSG = '''Hey, I am PrintBot and if you send me a .gcode file I can try to
+print it out on the 3D printer I am connected to!'''
+
+HELP_MSG = '''I do not know what do you mean by that but if you send me a
+.gcode
+file I can sure try to print it out on the 3D printer I am connected to!'''
+
+
+class PrintBot(Tox):
     def __init__(self, opts=None):
         if opts is not None:
-            super(EchoBot, self).__init__(opts)
+            super(PrintBot, self).__init__(opts)
 
-        self.self_set_name("EchoBot")
+        self.self_set_name("PrintBot")
         print('ID: %s' % self.self_get_address())
 
         self.connect()
@@ -152,6 +159,10 @@ class EchoBot(Tox):
             self.files[(fid, filenumber)]['f'].close()
             filename = self.files[(fid, filenumber)]['filename']
             print("Finished transfer of '{}'!".format(filename))
+            if not filename.endswith('.gcode'):
+                msg = "Sorry, I only print from .gcode files"
+                self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
+                return
 
             msg = "Thanks, I got {}, printing it right away!".format(filename)
             self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
@@ -193,16 +204,18 @@ class EchoBot(Tox):
             save_to_file(self, DATA)
 
     def on_friend_request(self, pk, message):
-        print('Friend request from %s: %s' % (pk, message))
+        print('Friend request from {}: '.format(pk, message))
         self.friend_add_norequest(pk)
         print('Accepted.')
+        fid = self.friend_by_public_key(pk)
+        self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, INTRO_MSG)
         save_to_file(self, DATA)
 
     def on_friend_message(self, friendId, type, message):
         name = self.friend_get_name(friendId)
-        print('%s: %s' % (name, message))
-        print('EchoBot: %s' % message)
-        self.friend_send_message(friendId, Tox.MESSAGE_TYPE_NORMAL, message)
+        print('{}: {}'.format(name, message))
+        print('PrintBot: {}'.format(HELP_MSG))
+        self.friend_send_message(friendId, Tox.MESSAGE_TYPE_NORMAL, HELP_MSG)
 
 
 opts = None
@@ -216,5 +229,5 @@ if len(sys.argv) == 2:
         opts.savedata_length = len(opts.savedata_data)
         opts.savedata_type = Tox.SAVEDATA_TYPE_TOX_SAVE
 
-t = EchoBot(opts)
+t = PrintBot(opts)
 t.loop()
