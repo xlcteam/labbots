@@ -122,12 +122,12 @@ def load_from_file(fname):
     return open(fname, 'rb').read()
 
 
-INTRO_MSG = '''Hey, I am PrintBot and if you send me a .gcode file I can try to
-print it out on the 3D printer I am connected to!'''
+INTRO_MSG = 'Hey, I am PrintBot and if you send me a .gcode file I can ' \
+            ' try to print it out on the 3D printer I am connected to!'
 
-HELP_MSG = '''I do not know what do you mean by that but if you send me a
-.gcode
-file I can sure try to print it out on the 3D printer I am connected to!'''
+HELP_MSG = 'I do not know what do you mean by that but if you send me a ' \
+        '.gcode file I can sure try to print it out on the 3D printer I ' \
+        'am connected to!'
 
 
 class PrintBot(Tox):
@@ -169,7 +169,7 @@ class PrintBot(Tox):
 
             call(['printcore', '/dev/ttyUSB0', filename])
 
-            msg = "I am happy to report {} is finish!".format(filename)
+            msg = "I am happy to report {} is printed!".format(filename)
             self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
             return
 
