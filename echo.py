@@ -27,6 +27,7 @@ from pytox import Tox, ToxAV
 
 from time import sleep
 from os.path import exists
+from subprocess import call
 
 SERVER = [
     "192.210.149.121",
@@ -151,6 +152,14 @@ class EchoBot(Tox):
             self.files[(fid, filenumber)]['f'].close()
             filename = self.files[(fid, filenumber)]['filename']
             print("Finished transfer of '{}'!".format(filename))
+
+            msg = "Thanks, I got {}, printing it right away!".format(filename)
+            self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
+
+            call(['printcore', '/dev/ttyUSB0', filename])
+
+            msg = "I am happy to report {} is finish!".format(filename)
+            self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
             return
 
         self.files[(fid, filenumber)]['f'].write(data)
