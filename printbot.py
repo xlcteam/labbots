@@ -131,6 +131,12 @@ HELP_MSG = 'I do not know what do you mean by that but if you send me a ' \
         'am connected to!'
 
 
+class Entry(object):
+    def __init__(self, fid, filename):
+        self.fid = fid
+        self.filename = filename
+
+
 class PrintBot(Tox):
     def __init__(self, opts=None):
         if opts is not None:
@@ -142,6 +148,17 @@ class PrintBot(Tox):
         self.connect()
         self.av = AV(self)
         self.files = {}
+
+        self.queue = []
+        self.printing = False
+
+    def notify_user(self, entry, pos):
+        """Send notification to the user about his current queue position"""
+        msg = "Your file {0} is {1}/{2} in the queue".format(
+                                entry.filename,
+                                pos,
+                                len(self.queue))
+        self.friend_send_message(entry.fid, Tox.MESSAGE_TYPE_NORMAL, msg)
 
     def on_file_recv(self, fid, filenumber, kind, size, filename):
         print (fid, filenumber, kind, size, filename)
@@ -165,16 +182,23 @@ class PrintBot(Tox):
                 self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
                 return
 
-            msg = "Thanks, I got {}, printing it right away!".format(filename)
-            self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
+            entry = Entry(fid, filename)
+            self.queue.append(entry)
+            self.notify_user(entry, len(self.queue))
 
-            thread = Thread(target=self.print_from_filename,
-                            args=(fid, filename))
-            thread.start()
             return
 
         self.files[(fid, filenumber)]['f'].write(data)
         print (fid, filenumber, position)
+
+    def start_printing(self, entry):
+        """Notify user that his object is being printed"""
+        msg = "Starting to print {0}".format(entry.filename)
+        self.friend_send_message(entry.fid, Tox.MESSAGE_TYPE_NORMAL, msg)
+
+        thread = Thread(target=self.print_from_filename,
+                        args=(entry.fid, entry.filename))
+        thread.start()
 
     def print_from_filename(self, fid, filename):
         # If you do not have a printer connected to the machine on which you
@@ -187,6 +211,8 @@ class PrintBot(Tox):
 
         msg = "I am happy to report {} is printed!".format(filename)
         self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
+        self.queue.pop(0)
+        self.printing = False
 
     def connect(self):
         print('connecting...')
@@ -208,6 +234,12 @@ class PrintBot(Tox):
                     print('Disconnected from DHT.')
                     self.connect()
                     checked = False
+
+                if not self.printing and len(self.queue) != 0:
+                    self.printing = True
+                    self.start_printing(self.queue[0])
+                    for pos, entry in enumerate(self.queue[1:], start=2):
+                        self.notify_user(entry, pos)
 
                 self.av.witerate()
                 self.iterate()
