@@ -28,6 +28,7 @@ from pytox import Tox, ToxAV
 from time import sleep
 from os.path import exists
 from subprocess import call
+from threading import Thread
 
 SERVER = [
     "192.210.149.121",
@@ -167,14 +168,25 @@ class PrintBot(Tox):
             msg = "Thanks, I got {}, printing it right away!".format(filename)
             self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
 
-            call(['printcore', '/dev/ttyUSB0', filename])
-
-            msg = "I am happy to report {} is printed!".format(filename)
-            self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
+            thread = Thread(target=self.print_from_filename,
+                            args=(fid, filename))
+            thread.start()
             return
 
         self.files[(fid, filenumber)]['f'].write(data)
         print (fid, filenumber, position)
+
+    def print_from_filename(self, fid, filename):
+        # If you do not have a printer connected to the machine on which you
+        # test this script, the following line might be a good approximation of
+        # the actual printing (without the physical result of course).
+        #
+        # call(['sleep', '30'])
+
+        call(['printcore', '/dev/ttyUSB0', filename])
+
+        msg = "I am happy to report {} is printed!".format(filename)
+        self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
 
     def connect(self):
         print('connecting...')
