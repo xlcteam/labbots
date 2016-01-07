@@ -30,6 +30,14 @@ from os.path import exists
 from subprocess import call
 from threading import Thread
 
+try:
+    import local_config as cfg
+except ImportError:
+    print ("It seems that a local_config file has not been found. \n"
+           "If you need to create one feel free to inspire yourself with"
+           "local_config_example.py from the source directory.")
+    sys.exit(-1)
+
 SERVER = [
     "192.210.149.121",
     33445,
