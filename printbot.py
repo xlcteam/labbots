@@ -179,7 +179,6 @@ class PrintBot(Tox):
         self.friend_send_message(entry.fid, Tox.MESSAGE_TYPE_NORMAL, msg)
 
     def on_file_recv(self, fid, filenumber, kind, size, filename):
-        print (fid, filenumber, kind, size, filename)
         if size == 0:
             return
 
@@ -225,7 +224,7 @@ class PrintBot(Tox):
         #
         # call(['sleep', '30'])
 
-        call(['printcore', '/dev/ttyUSB0', filename])
+        call(['./print.sh', filename], env={'PRINTBOT_DIR': cfg.PRINTBOT_DIR})
 
         msg = "I am happy to report {} is printed!".format(filename)
         self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, msg)
