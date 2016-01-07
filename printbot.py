@@ -128,7 +128,9 @@ INTRO_MSG = 'Hey, I am PrintBot and if you send me a .gcode file I can ' \
 
 HELP_MSG = 'I do not know what do you mean by that but if you send me a ' \
         '.gcode file I can sure try to print it out on the 3D printer I ' \
-        'am connected to!'
+        'am connected to!\n' \
+        'If you want to see the status of the files you sent, a message ' \
+        'with just the word status in it.'
 
 
 class Entry(object):
@@ -151,6 +153,14 @@ class PrintBot(Tox):
 
         self.queue = []
         self.printing = False
+
+    def status_report(self, fid):
+        """Create a status report on what the queue looks like for a given
+        firend ID"""
+        user_files = [(k, e.filename) for k, e in enumerate(self.queue)
+                      if e.fid == fid]
+        report = '\n'.join(map(lambda x: '{0}: {1}'.format(*x), user_files))
+        return 'Your queue status report:\n{}'.format(report)
 
     def notify_user(self, entry, pos):
         """Send notification to the user about his current queue position"""
@@ -255,11 +265,17 @@ class PrintBot(Tox):
         self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, INTRO_MSG)
         save_to_file(self, DATA)
 
-    def on_friend_message(self, friendId, type, message):
-        name = self.friend_get_name(friendId)
+    def on_friend_message(self, fid, type, message):
+        name = self.friend_get_name(fid)
         print('{}: {}'.format(name, message))
         print('PrintBot: {}'.format(HELP_MSG))
-        self.friend_send_message(friendId, Tox.MESSAGE_TYPE_NORMAL, HELP_MSG)
+
+        if message == 'status':
+            self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL,
+                                     self.status_report(fid))
+            return
+
+        self.friend_send_message(fid, Tox.MESSAGE_TYPE_NORMAL, HELP_MSG)
 
 
 opts = None
